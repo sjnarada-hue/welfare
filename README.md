@@ -67,7 +67,7 @@ tests/                      ← 자동 테스트
 ## 2. 내 컴퓨터에서 실행해 보기
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 ```
 
 ```bash
@@ -88,10 +88,19 @@ python -m pytest -q
 
 홈 화면에 추가(앱 설치)는 **https 주소**에서만 동작하므로 인터넷 서버에 올려야 합니다.
 
-1. 서버에 올립니다. 아래 중 편한 곳을 고르면 됩니다.
-   - Render / Railway 등: 이 GitHub 저장소를 연결하고 실행 명령을 `uvicorn app.main:app --host 0.0.0.0 --port $PORT`로 지정
+1. 서버에 올립니다. **Vercel(권장, 무료 플랜 가능)** 설정이 들어 있습니다(`vercel.json`, `api/index.py`).
+   1. https://vercel.com 에 GitHub 계정으로 로그인합니다.
+   2. **Add New… → Project** → `welfare` 저장소 옆 **Import**를 누릅니다.
+   3. Framework Preset은 **Other** 그대로 두고, **Environment Variables**에 `ANTHROPIC_API_KEY`를 넣습니다(AI 답변을 쓸 때만).
+   4. **Deploy**를 누르면 1~2분 뒤 `https://프로젝트이름.vercel.app` 주소가 나옵니다.
+   5. 이후 GitHub에 올라가는 변경(예: `data/knowledge.json` 수정)은 자동으로 다시 배포됩니다.
+      브랜치가 `main`이 아니면 **Settings → Git → Production Branch**에서 배포할 브랜치를 고르세요.
+
+   다른 곳에 올릴 때:
+   - Render / Railway 등: 실행 명령을 `uvicorn app.main:app --host 0.0.0.0 --port $PORT`로 지정
    - Docker를 쓰는 서버(학교 서버, Cloud Run 등): 포함된 `Dockerfile` 사용
-2. 서버 환경변수에 `ANTHROPIC_API_KEY`를 넣습니다(AI 답변을 쓸 때만).
+2. AI 답변을 쓰려면 서버 환경변수에 `ANTHROPIC_API_KEY`를 넣습니다.
+   > Vercel에서는 요청마다 서버가 새로 뜰 수 있어, "그 다음엔요?" 같은 이어지는 질문의 앞 대화를 놓칠 수 있습니다. 버튼·한 번에 묻는 질문은 문제없습니다.
 3. 받은 https 주소를 QR 코드로 만들어 첫 수업에서 함께 열고, **홈 화면에 추가**까지 같이 해 둡니다.
    - 안드로이드: 화면 위 '추가하기' 버튼, 또는 브라우저 메뉴 → '홈 화면에 추가'
    - 아이폰(사파리): 아래 공유 버튼(□↑) → '홈 화면에 추가'
