@@ -2,94 +2,284 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>학과 도우미 테스트</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>학과 도우미</title>
+<meta name="description" content="로그인, 줌·팀즈 접속, 과제 제출이 막힐 때 바로 물어보는 학과 챗봇">
+<meta name="theme-color" content="#0f766e">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/static/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="학과 도우미">
 <style>
-  :root { --bg:#b2c7d9; --me:#fee500; --bot:#fff; --text:#222; --muted:#555; --btn:#fff; --line:#d0d7de; }
+  :root {
+    --brand: #0f766e; --brand-strong: #115e59; --brand-soft: #ccfbf1;
+    --bg: #f4f7f6; --surface: #ffffff; --text: #1c2522; --muted: #5b6b66; --line: #d6e0dd;
+    --me: #0f766e; --me-text: #ffffff; --on-brand: #ffffff; --header: #0f766e; --warn: #fff4d6; --warn-line: #f0c860;
+    --fs: 18px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --brand: #2dd4bf; --brand-strong: #5eead4; --brand-soft: #134e4a;
+      --bg: #0f1514; --surface: #1a2321; --text: #e8efed; --muted: #9db0aa; --line: #2c3a37;
+      --me: #14b8a6; --me-text: #04201d; --on-brand: #04201d; --header: #134e4a; --warn: #3a3010; --warn-line: #8a6d1a;
+    }
+  }
+  :root[data-size="large"] { --fs: 22px; }
   * { box-sizing: border-box; }
-  body { margin:0; background:#e9edf1; font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; color:var(--text); }
-  .phone { max-width:480px; margin:0 auto; height:100dvh; display:flex; flex-direction:column; background:var(--bg); }
-  header { background:#a3b8cb; padding:14px 16px; font-size:19px; font-weight:700; }
-  header small { display:block; font-size:13px; font-weight:400; color:#333; }
-  #log { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
-  .msg { max-width:85%; padding:12px 14px; border-radius:14px; font-size:18px; line-height:1.55; white-space:pre-wrap; word-break:keep-all; overflow-wrap:anywhere; }
-  .bot { align-self:flex-start; background:var(--bot); border-top-left-radius:4px; }
-  .me  { align-self:flex-end; background:var(--me); border-top-right-radius:4px; }
-  .tag { display:block; font-size:12px; color:var(--muted); margin-top:6px; }
-  .menu, .links { align-self:stretch; display:flex; flex-direction:column; gap:8px; }
-  .menu button { font-size:19px; padding:16px; border-radius:12px; border:1px solid var(--line); background:var(--btn); text-align:left; cursor:pointer; font-weight:600; }
-  .menu button::before { content:"👉 "; }
-  .links a, .links button { display:block; font-size:17px; padding:12px; border-radius:10px; background:#fff; border:1px solid var(--line); text-align:center; color:#1a5fb4; text-decoration:none; font-weight:600; }
-  .quick { display:flex; gap:8px; flex-wrap:wrap; padding:8px 12px; background:#c4d3e0; min-height:0; }
-  .quick button { font-size:16px; padding:10px 14px; border-radius:20px; border:1px solid #9fb3c6; background:#fff; cursor:pointer; }
-  form { display:flex; gap:8px; padding:10px; background:#fff; }
-  input { flex:1; font-size:18px; padding:12px; border:1px solid var(--line); border-radius:10px; min-width:0; }
-  form button { font-size:18px; padding:0 18px; border:0; border-radius:10px; background:var(--me); font-weight:700; cursor:pointer; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif; font-size: var(--fs); -webkit-text-size-adjust: 100%; }
+  button { font: inherit; color: inherit; }
+  .app { max-width: 640px; margin: 0 auto; height: 100dvh; display: flex; flex-direction: column; }
+
+  header { display: flex; align-items: center; gap: 10px; padding: calc(10px + env(safe-area-inset-top)) 16px 10px; background: var(--header); color: #fff; font-size: 18px; }
+  header img { width: 36px; height: 36px; border-radius: 9px; background: #fff2; }
+  header .title { flex: 1; min-width: 0; }
+  header h1 { margin: 0; font-size: 1.1em; }
+  header p { margin: 0; font-size: .72em; opacity: .9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hbtn { background: #ffffff26; border: 1px solid #ffffff55; color: #fff; border-radius: 10px; padding: 8px 10px; font-size: .78em; cursor: pointer; white-space: nowrap; }
+
+  .install { display: none; gap: 10px; align-items: center; padding: 10px 16px; background: var(--brand-soft); font-size: .8em; }
+  .install.show { display: flex; }
+  .install span { flex: 1; }
+  .install button { border: 0; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+  .install .go { background: var(--brand); color: var(--on-brand); font-weight: 700; }
+  .install .x { background: transparent; }
+
+  #log { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .msg { max-width: 88%; padding: 12px 14px; border-radius: 16px; line-height: 1.6; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; }
+  .bot { align-self: flex-start; background: var(--surface); border: 1px solid var(--line); border-top-left-radius: 4px; }
+  .bot.privacy { background: var(--warn); border-color: var(--warn-line); }
+  .me { align-self: flex-end; background: var(--me); color: var(--me-text); border-top-right-radius: 4px; }
+  .meta { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: .68em; color: var(--muted); }
+  .meta .speak { margin-left: auto; border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 4px 10px; cursor: pointer; color: var(--text); }
+  .badge-ai { background: var(--warn); border: 1px solid var(--warn-line); color: var(--text); border-radius: 6px; padding: 1px 6px; }
+  .typing { color: var(--muted); }
+
+  .stack { align-self: stretch; display: flex; flex-direction: column; gap: 8px; }
+  .menu button { word-break: keep-all; text-align: left; padding: 16px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 12px; }
+  .menu button:active, .menu button:hover { border-color: var(--brand); }
+  .menu .num { flex: none; width: 1.7em; height: 1.7em; border-radius: 50%; background: var(--brand); color: var(--on-brand); display: grid; place-items: center; font-size: .85em; }
+  .link { display: block; padding: 13px; border-radius: 12px; background: var(--surface); border: 2px solid var(--brand); color: var(--brand-strong); text-align: center; text-decoration: none; font-weight: 700; }
+  .contact { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+  .contact h3 { margin: 0 0 4px; font-size: 1em; }
+  .contact p { margin: 0 0 10px; color: var(--muted); font-size: .8em; }
+  .contact .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .contact a { flex: 1; min-width: 8em; text-align: center; padding: 12px; border-radius: 10px; text-decoration: none; font-weight: 700; }
+  .contact .call { background: var(--brand); color: var(--on-brand); }
+  .contact .mail { border: 2px solid var(--brand); color: var(--brand-strong); }
+
+  .quick { display: flex; gap: 8px; overflow-x: auto; padding: 8px 12px; border-top: 1px solid var(--line); background: var(--bg); }
+  .quick:empty { display: none; }
+  .quick button { flex: none; padding: 10px 16px; border-radius: 999px; border: 2px solid var(--brand); background: var(--surface); color: var(--brand-strong); font-weight: 700; cursor: pointer; font-size: .9em; }
+
+  form { display: flex; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--line); }
+  #q { flex: 1; min-width: 0; font: inherit; padding: 12px 14px; border: 2px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--text); }
+  #q:focus { outline: none; border-color: var(--brand); }
+  .icon-btn { flex: none; width: 52px; border-radius: 12px; border: 2px solid var(--line); background: var(--bg); cursor: pointer; font-size: 1.1em; }
+  .icon-btn.on { background: #e11d48; border-color: #e11d48; color: #fff; }
+  .send { flex: none; padding: 0 18px; border: 0; border-radius: 12px; background: var(--brand); color: var(--on-brand); font-weight: 700; cursor: pointer; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 </style>
 </head>
 <body>
-<div class="phone">
-  <header>학과 도우미 <small>카카오톡 연결 전 테스트 화면입니다</small></header>
-  <div id="log" aria-live="polite"></div>
+<div class="app">
+  <header>
+    <img src="/static/icons/icon-192.png" alt="">
+    <div class="title">
+      <h1 id="appName">학과 도우미</h1>
+      <p id="dept">막히면 언제든 물어보세요</p>
+    </div>
+    <button class="hbtn" id="sizeBtn" type="button" aria-pressed="false">글씨 크게</button>
+    <button class="hbtn" id="homeBtn" type="button">처음으로</button>
+  </header>
+
+  <div class="install" id="install">
+    <span id="installText">휴대폰 홈 화면에 추가하면 앱처럼 바로 열 수 있어요.</span>
+    <button class="go" id="installGo" type="button">추가하기</button>
+    <button class="x" id="installX" type="button" aria-label="닫기">✕</button>
+  </div>
+
+  <main id="log" aria-live="polite"></main>
   <div class="quick" id="quick"></div>
+
   <form id="f">
-    <input id="q" placeholder="궁금한 것을 적어 보세요" autocomplete="off">
-    <button>보내기</button>
+    <label for="q" class="sr">질문 입력</label>
+    <input id="q" placeholder="궁금한 것을 적어 보세요" autocomplete="off" enterkeyhint="send">
+    <button class="icon-btn" id="mic" type="button" aria-label="말로 묻기" hidden>🎤</button>
+    <button class="send" type="submit">보내기</button>
   </form>
 </div>
+
 <script>
-const log = document.getElementById('log');
-const quick = document.getElementById('quick');
-let sid;
-try { sid = localStorage.getItem('sid'); } catch (e) {}
-if (!sid) { sid = Math.random().toString(36).slice(2); try { localStorage.setItem('sid', sid); } catch (e) {} }
+const $ = (id) => document.getElementById(id);
+const log = $('log'), quick = $('quick');
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+};
 
-const SOURCE = { menu: '정해진 답변', ai: 'AI 답변 · 틀릴 수 있어요', handoff: '사람 연결', privacy: '개인정보 보호', fallback: '안내' };
+let sid = store.get('sid');
+if (!sid) { sid = (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)); store.set('sid', sid); }
 
-function add(cls, text, source) {
+// ---- 글씨 크기 ----
+function applySize(large) {
+  document.documentElement.dataset.size = large ? 'large' : '';
+  $('sizeBtn').textContent = large ? '글씨 보통' : '글씨 크게';
+  $('sizeBtn').setAttribute('aria-pressed', String(large));
+}
+applySize(store.get('size') === 'large');
+$('sizeBtn').onclick = () => {
+  const large = document.documentElement.dataset.size !== 'large';
+  store.set('size', large ? 'large' : ''); applySize(large);
+};
+
+// ---- 읽어주기 ----
+const canSpeak = 'speechSynthesis' in window;
+function speak(text) {
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.replace(/[※■☎✉🕒⚠️😊⏳🙂]/g, ''));
+  u.lang = 'ko-KR'; u.rate = 0.9;
+  speechSynthesis.speak(u);
+}
+
+// ---- 화면 그리기 ----
+const LABEL = { menu: '학과 안내', ai: 'AI 답변', handoff: '사람 연결', privacy: '개인정보 보호', fallback: '안내' };
+
+function bubble(cls, text, source) {
   const d = document.createElement('div');
-  d.className = 'msg ' + cls;
+  d.className = 'msg ' + cls + (source === 'privacy' ? ' privacy' : '');
   d.textContent = text;
-  if (source && SOURCE[source]) { const t = document.createElement('span'); t.className = 'tag'; t.textContent = SOURCE[source]; d.appendChild(t); }
-  log.appendChild(d); log.scrollTop = log.scrollHeight;
+  if (cls === 'bot' && source) {
+    const meta = document.createElement('div'); meta.className = 'meta';
+    const tag = document.createElement('span');
+    if (source === 'ai') { tag.className = 'badge-ai'; tag.textContent = 'AI 답변 · 틀릴 수 있어요'; }
+    else tag.textContent = LABEL[source] || '';
+    meta.appendChild(tag);
+    if (canSpeak) {
+      const s = document.createElement('button'); s.type = 'button'; s.className = 'speak'; s.textContent = '🔊 읽어주기';
+      s.onclick = () => speak(text); meta.appendChild(s);
+    }
+    d.appendChild(meta);
+  }
+  log.appendChild(d);
   return d;
 }
 
+function stack(cls) { const s = document.createElement('div'); s.className = 'stack ' + cls; log.appendChild(s); return s; }
+
 function render(r) {
-  add('bot', r.text, r.source);
+  bubble('bot', r.text, r.source);
+
   if (r.menu.length) {
-    const m = document.createElement('div'); m.className = 'menu';
-    r.menu.forEach(label => { const b = document.createElement('button'); b.textContent = label; b.onclick = () => send(label); m.appendChild(b); });
-    log.appendChild(m);
+    const m = stack('menu');
+    r.menu.forEach((label, i) => {
+      const b = document.createElement('button'); b.type = 'button';
+      b.innerHTML = '<span class="num"></span><span></span>';
+      b.children[0].textContent = i + 1; b.children[1].textContent = label;
+      b.onclick = () => send(label); m.appendChild(b);
+    });
   }
-  if (r.links.length || r.operator) {
-    const l = document.createElement('div'); l.className = 'links';
-    if (r.operator) { const b = document.createElement('button'); b.textContent = '상담원 연결 (카카오톡에서 1:1 채팅으로 바뀝니다)'; b.disabled = true; l.appendChild(b); }
-    r.links.forEach(x => { const a = document.createElement('a'); a.href = x.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = x.label + ' ↗'; l.appendChild(a); });
-    log.appendChild(l);
+
+  if (r.links.length) {
+    const l = stack('links');
+    r.links.forEach((x) => {
+      const a = document.createElement('a'); a.className = 'link'; a.href = x.url; a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = x.label + ' 열기 ↗'; l.appendChild(a);
+    });
   }
+
+  if (r.contacts.length) {
+    const c = stack('contacts');
+    r.contacts.forEach((p) => {
+      const card = document.createElement('div'); card.className = 'contact';
+      const h = document.createElement('h3'); h.textContent = `${p.role} ${p.name}`;
+      const t = document.createElement('p'); t.textContent = p.hours || '';
+      const row = document.createElement('div'); row.className = 'row';
+      const tel = (p.phone || '').replace(/[^0-9+]/g, '');
+      if (tel) { const a = document.createElement('a'); a.className = 'call'; a.href = 'tel:' + tel; a.textContent = '📞 전화하기'; row.appendChild(a); }
+      if (/^[^\s@\[\]]+@[^\s@\[\]]+$/.test(p.email || '')) {
+        const a = document.createElement('a'); a.className = 'mail';
+        a.href = 'mailto:' + p.email + '?subject=' + encodeURIComponent('[학과 도우미] 문의드립니다');
+        a.textContent = '✉️ 이메일 보내기'; row.appendChild(a);
+      }
+      card.append(h, t, row); c.appendChild(card);
+    });
+  }
+
   quick.innerHTML = '';
-  r.quick_replies.forEach(q => { const b = document.createElement('button'); b.textContent = q; b.onclick = () => send(q); quick.appendChild(b); });
-  log.scrollTop = log.scrollHeight;
+  r.quick_replies.forEach((q) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = q; b.onclick = () => send(q); quick.appendChild(b);
+  });
 }
 
+function scrollToLast(el) { requestAnimationFrame(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' })); }
+
+let busy = false;
 async function send(text, silent) {
-  if (!silent) add('me', text);
-  const wait = add('bot', '답을 찾고 있어요… ⏳');
+  if (busy) return; busy = true;
+  quick.innerHTML = '';
+  if (!silent) bubble('me', text);
+  const wait = bubble('bot', '답을 찾고 있어요… ⏳'); wait.classList.add('typing');
+  scrollToLast(wait);
   try {
     const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: sid, message: text }) });
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    const start = log.children.length - 1;
     wait.remove();
-    render(await res.json());
+    render(data);
+    scrollToLast(log.children[start] || log.lastElementChild);
   } catch (e) {
-    wait.textContent = '연결에 문제가 있어요. 잠시 후 다시 시도해 주세요.';
-  }
+    wait.classList.remove('typing');
+    wait.textContent = navigator.onLine === false
+      ? '인터넷이 연결되어 있지 않아요. 와이파이나 데이터를 켠 뒤 다시 눌러 주세요.'
+      : '연결에 문제가 있어요. 잠시 후 다시 시도해 주세요.';
+    quick.innerHTML = '';
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = '다시 시도';
+    b.onclick = () => { wait.remove(); busy = false; send(text, true); }; quick.appendChild(b);
+  } finally { busy = false; }
 }
 
-document.getElementById('f').onsubmit = e => {
+$('f').onsubmit = (e) => {
   e.preventDefault();
-  const q = document.getElementById('q');
-  if (q.value.trim()) { send(q.value.trim()); q.value = ''; }
+  const q = $('q'); const v = q.value.trim();
+  if (v) { send(v); q.value = ''; }
 };
+$('homeBtn').onclick = () => { log.innerHTML = ''; send('처음으로', true); };
+
+// ---- 말로 묻기 (지원하는 브라우저에서만 보임) ----
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SR) {
+  const mic = $('mic'); mic.hidden = false;
+  let rec = null;
+  mic.onclick = () => {
+    if (rec) { rec.stop(); return; }
+    rec = new SR(); rec.lang = 'ko-KR'; rec.interimResults = true;
+    mic.classList.add('on'); $('q').placeholder = '말씀하세요…';
+    rec.onresult = (e) => { $('q').value = Array.from(e.results).map((r) => r[0].transcript).join(''); };
+    rec.onend = () => { mic.classList.remove('on'); $('q').placeholder = '궁금한 것을 적어 보세요'; rec = null; };
+    rec.start();
+  };
+}
+
+// ---- 홈 화면에 추가 안내 ----
+const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+let deferred = null;
+function showInstall() { if (!standalone && store.get('installDismissed') !== '1') $('install').classList.add('show'); }
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferred = e; showInstall(); });
+if (isIOS) { $('installText').textContent = '아래 공유 버튼(□↑)을 누르고 "홈 화면에 추가"를 고르면 앱처럼 쓸 수 있어요.'; $('installGo').hidden = true; showInstall(); }
+$('installGo').onclick = async () => { if (deferred) { deferred.prompt(); await deferred.userChoice; deferred = null; } $('install').classList.remove('show'); };
+$('installX').onclick = () => { store.set('installDismissed', '1'); $('install').classList.remove('show'); };
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+
+// ---- 시작 ----
+fetch('/api/config').then((r) => r.json()).then((c) => {
+  $('appName').textContent = c.app_name; document.title = c.app_name;
+  $('dept').textContent = [c.school_name, c.department_name].filter((x) => x && !x.startsWith('[')).join(' ') || '막히면 언제든 물어보세요';
+}).catch(() => {});
 send('처음으로', true);
 </script>
 </body>

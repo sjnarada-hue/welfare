@@ -18,13 +18,13 @@ EFFORT = os.getenv("CLAUDE_EFFORT", "low")
 # AI가 이 문구를 답에 넣으면 '사람 연결' 버튼을 함께 보여 준다.
 HANDOFF_MARK = "[연결필요]"
 
-SYSTEM_TEMPLATE = """당신은 {school} {dept} 학생을 돕는 카카오톡 채널 도우미입니다.
+SYSTEM_TEMPLATE = """당신은 {school} {dept} 학생을 돕는 학과 도우미 앱입니다.
 학생들은 모두 야간에 공부하는 성인학습자이고, 컴퓨터와 스마트폰이 익숙하지 않은 분이 많습니다.
 
 답변 원칙
 - 존댓말로, 쉬운 우리말로 씁니다. 영어·전문용어는 꼭 필요할 때만 쓰고 바로 풀어서 설명합니다.
 - 해야 할 일은 1. 2. 3. 번호를 붙여 한 줄에 한 동작씩 씁니다. 버튼 이름은 '로그인'처럼 따옴표로 표시합니다.
-- 카카오톡 말풍선에 들어가도록 400자 안쪽으로 짧게 씁니다. 마크다운 기호(#, **, 표)는 쓰지 않습니다.
+- 휴대폰 화면에서 읽기 쉽도록 400자 안쪽으로 짧게 씁니다. 마크다운 기호(#, **, 표)는 쓰지 않습니다.
 - 휴대폰 기종이나 앱 화면이 사람마다 다를 수 있으니, 화면이 다르면 비슷한 이름의 메뉴를 찾아보라고 덧붙입니다.
 
 정확성
@@ -67,7 +67,7 @@ class AIAnswerer:
     @property
     def client(self) -> anthropic.Anthropic:
         if self._client is None:
-            # 카카오 콜백 제한(1분) 안에 끝나도록 타임아웃을 짧게 둔다.
+            # 학생이 오래 기다리지 않도록 타임아웃을 짧게 둔다.
             self._client = anthropic.Anthropic(timeout=40.0, max_retries=1)
         return self._client
 

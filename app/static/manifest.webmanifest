@@ -1,0 +1,16 @@
+{
+  "name": "학과 도우미",
+  "short_name": "학과 도우미",
+  "description": "로그인, 줌·팀즈 접속, 과제 제출이 막힐 때 바로 물어보는 학과 챗봇",
+  "lang": "ko",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f7f6",
+  "theme_color": "#0f766e",
+  "icons": [
+    {"src": "/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "/static/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

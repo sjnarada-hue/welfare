@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import pytest
 from fastapi.testclient import TestClient
 
-from app import kakao, privacy
+from app import privacy
 from app.ai import AIAnswerer, HANDOFF_MARK
 from app.bot import Bot
 from app.knowledge import Knowledge
@@ -57,7 +57,7 @@ def test_button_answer_does_not_call_ai():
 def test_handoff_button():
     bot, _ = make_bot()
     r = bot.respond("u", "교수님(조교)께 직접 물어보기")
-    assert r.source == "handoff" and r.operator
+    assert r.source == "handoff" and r.show_contacts
 
 
 def test_free_question_goes_to_ai_with_reference():
@@ -72,7 +72,7 @@ def test_free_question_goes_to_ai_with_reference():
 def test_ai_handoff_mark_adds_contacts():
     bot, _ = make_bot(text=f"확인이 필요해요. {HANDOFF_MARK}")
     r = bot.respond("u", "이번 학기 장학금 신청 기간이 언제인지 알려주실 수 있나요")
-    assert HANDOFF_MARK not in r.text and r.operator
+    assert HANDOFF_MARK not in r.text and r.show_contacts
 
 
 def test_refusal_falls_back_to_human():
@@ -93,45 +93,44 @@ def test_password_question_is_not_flagged():
     assert not privacy.contains_sensitive("비밀번호를 잊어버렸어요")
 
 
-def test_kakao_response_shape():
-    bot, _ = make_bot()
-    out = kakao.to_response(bot.respond("u", "처음으로"), bot.knowledge)
-    assert out["version"] == "2.0"
-    kinds = [list(o)[0] for o in out["template"]["outputs"]]
-    assert kinds == ["simpleText", "listCard"]
-    assert len(out["template"]["outputs"][1]["listCard"]["items"]) <= 5
-
-
-def test_kakao_quick_reply_label_limit():
-    bot, _ = make_bot()
-    out = kakao.to_response(bot.respond("u", "아무거나"), bot.knowledge)
-    for q in out["template"].get("quickReplies", []):
-        assert len(q["label"]) <= kakao.LABEL_MAX
-
-
-def test_long_text_is_split():
-    chunks = kakao._split("가" * 2500)
-    assert len(chunks) == 3 and all(len(c) <= 1000 for c in chunks)
-
-
-def test_kakao_endpoint_uses_callback_for_ai(monkeypatch):
+def test_chat_api_menu_and_contacts(monkeypatch):
     from app import main
 
     bot, _ = make_bot()
     monkeypatch.setattr(main, "bot", bot)
-    sent = []
-    monkeypatch.setattr(main.httpx, "post", lambda url, json, timeout: sent.append(json) or SimpleNamespace(raise_for_status=lambda: None))
     client = TestClient(main.app)
-    body = {"userRequest": {"utterance": "카메라가 안 켜져요 수업 중인데 어떻게 해야 하나요", "user": {"id": "abc"}, "callbackUrl": "https://cb.example"}}
-    res = client.post("/kakao/skill", json=body).json()
-    assert res["useCallback"] is True
-    assert sent and sent[0]["template"]["outputs"][0]["simpleText"]["text"]
+    first = client.post("/api/chat", json={"session_id": "s1", "message": "처음으로"}).json()
+    assert len(first["menu"]) == 5 and first["contacts"] == []
+    human = client.post("/api/chat", json={"session_id": "s1", "message": first["menu"][-1]}).json()
+    assert human["source"] == "handoff" and human["contacts"]
 
 
-def test_kakao_endpoint_menu_is_immediate():
+def test_chat_api_ai_answer(monkeypatch):
+    from app import main
+
+    bot, messages = make_bot()
+    monkeypatch.setattr(main, "bot", bot)
+    client = TestClient(main.app)
+    res = client.post("/api/chat", json={"session_id": "s2", "message": "카메라가 안 켜져요 수업 중인데 어떻게 해야 하나요"}).json()
+    assert res["source"] == "ai" and messages.calls
+
+
+def test_chat_api_rejects_too_long_message():
     from app import main
 
     client = TestClient(main.app)
-    body = {"userRequest": {"utterance": "과제는 어디에 내요?", "user": {"id": "abc"}}}
-    res = client.post("/kakao/skill", json=body).json()
-    assert "template" in res
+    res = client.post("/api/chat", json={"session_id": "s", "message": "가" * 1001})
+    assert res.status_code == 422
+
+
+def test_app_shell_is_installable():
+    from app import main
+
+    client = TestClient(main.app)
+    assert client.get("/").status_code == 200
+    manifest = client.get("/manifest.webmanifest").json()
+    assert manifest["display"] == "standalone" and manifest["icons"]
+    for icon in manifest["icons"]:
+        assert client.get(icon["src"]).status_code == 200
+    assert client.get("/sw.js").headers["content-type"].startswith("application/javascript")
+    assert client.get("/api/config").json()["app_name"]

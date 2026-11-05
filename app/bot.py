@@ -1,6 +1,6 @@
 """챗봇의 핵심 흐름: 버튼 → AI → 사람.
 
-카카오톡이든 웹 데모든 같은 Reply 객체를 받아 각자 화면에 맞게 그린다.
+앱 화면은 Reply 객체를 받아 말풍선·버튼·연락처 카드로 그린다.
 """
 
 from __future__ import annotations
@@ -27,8 +27,8 @@ class Reply:
     quick_replies: list[str] = field(default_factory=list)
     # True면 첫 화면 큰 버튼 메뉴를 보여 준다.
     show_menu: bool = False
-    # True면 카카오 '상담원 연결(1:1 채팅)' 버튼을 붙인다.
-    operator: bool = False
+    # True면 교수·조교 연락처 카드(전화·이메일 버튼)를 함께 보여 준다.
+    show_contacts: bool = False
     source: str = "menu"  # menu | ai | handoff | privacy | fallback
 
 
@@ -82,13 +82,13 @@ class Bot:
     def handoff(self) -> Reply:
         return Reply(
             text=(
-                "교수님·조교에게 직접 물어보실 수 있어요.\n\n"
-                f"{self.knowledge.contacts_text()}\n\n"
-                "이 채팅방에서 '상담원 연결(1:1 채팅)'을 누르시면 조교가 확인 후 답장 드려요.\n"
-                "※ 학번·비밀번호는 보내지 마시고, 이름과 과목만 알려 주세요."
+                "교수님·조교에게 직접 물어보실 수 있어요.\n"
+                "아래 '전화하기'나 '이메일 보내기'를 누르세요.\n\n"
+                "※ 연락할 때는 이름과 과목, 어디서 막혔는지만 알려 주세요.\n"
+                "비밀번호는 절대 알려 주지 마세요."
             ),
             quick_replies=[HOME],
-            operator=True,
+            show_contacts=True,
             source="handoff",
         )
 
@@ -102,19 +102,7 @@ class Bot:
             source="menu",
         )
 
-    def thinking_text(self) -> str:
-        return "답을 찾고 있어요. 잠시만 기다려 주세요… ⏳"
-
     # ---- 흐름 ----
-    def needs_ai(self, utterance: str) -> bool:
-        """이 메시지가 AI 호출이 필요한지(=시간이 걸리는지) 미리 판단한다."""
-        u = utterance.strip()
-        if not u or u in HOME_WORDS or u in (SOLVED, NOT_SOLVED):
-            return False
-        if privacy.contains_sensitive(u) or self.knowledge.match(u):
-            return False
-        return self.ai.enabled
-
     def respond(self, user_id: str, utterance: str) -> Reply:
         u = utterance.strip()
 
@@ -144,13 +132,7 @@ class Bot:
                 text, handoff = result
                 self.history.add(user_id, u, text)
                 if handoff:
-                    contacts = self.knowledge.contacts_text()
-                    return Reply(
-                        text=f"{text}\n\n{contacts}",
-                        quick_replies=[HOME],
-                        operator=True,
-                        source="ai",
-                    )
+                    return Reply(text=text, quick_replies=[HOME], show_contacts=True, source="ai")
                 return Reply(text=text, quick_replies=[SOLVED, NOT_SOLVED, HOME], source="ai")
 
         # 3단계: 사람

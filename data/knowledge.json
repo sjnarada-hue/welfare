@@ -2,6 +2,7 @@
   "_안내": "이 파일만 고치면 챗봇 답변이 바뀝니다. [대괄호] 안의 값은 실제 학교·학과 정보로 바꿔 주세요. AI도 이 파일의 내용만 근거로 답합니다.",
 
   "department": {
+    "app_name": "학과 도우미",
     "school_name": "[OO대학교]",
     "department_name": "사회복지학과(야간)",
     "homepage_url": "https://www.example.ac.kr",
