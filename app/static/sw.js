@@ -1,9 +1,11 @@
 // 앱 화면을 저장해 두어 다음부터 빨리 열리게 한다.
 // 질문·답변(/api/)은 저장하지 않고 항상 서버에 묻는다.
-const CACHE = 'helper-v1';
+const CACHE = 'helper-v2';
 const SHELL = [
   '/',
   '/manifest.webmanifest',
+  '/journal',
+  '/journal.webmanifest',
   '/static/icons/icon-192.png',
   '/static/icons/icon-512.png',
   '/static/icons/apple-touch-icon.png',
